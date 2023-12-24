@@ -94,29 +94,15 @@ class Dataset(Dataset):
     def get_img_label_path_pairs(self):
 
         img_label_pair_list = {}
-        if self.flag =='train':
+        if self.flag in ['train', 'val']:
             for idx , did in enumerate(open(self.img_txt_path)):
                 try:
                     image1_name,image2_name,mask_name = did.strip("\n").split(' ')
                 except ValueError:  # Adhoc for test.
-                    image_name = mask_name = did.strip("\n")
-                extract_name = image1_name[image1_name.rindex('/') +1: image1_name.rindex('.')]
-                img1_file = os.path.join(self.img_path , image1_name)
-                img2_file = os.path.join(self.img_path , image2_name)
-                lbl_file = os.path.join(self.label_path, mask_name)
-                img_label_pair_list.setdefault(idx, [img1_file,img2_file,lbl_file,image2_name])
-
-        if self.flag == 'val':
-            self.label_ext = '.png'
-            for idx , did in enumerate(open(self.img_txt_path)):
-                try:
-                    image1_name, image2_name, mask_name = did.strip("\n").split(' ')
-                except ValueError:  # Adhoc for test.
-                    image_name = mask_name = did.strip("\n")
-                extract_name = image1_name[image1_name.rindex('/') +1: image1_name.rindex('.')]
-                img1_file = os.path.join(self.img_path , image1_name)
-                img2_file = os.path.join(self.img_path , image2_name)
-                lbl_file = os.path.join(self.label_path , mask_name)
+                    image1_name = image2_name = mask_name = did.strip("\n")
+                img1_file = os.path.join(self.img_path , self.flag, "A", image1_name)
+                img2_file = os.path.join(self.img_path , self.flag, "B", image2_name)
+                lbl_file = os.path.join(self.label_path, self.flag, "OUT", mask_name)
                 img_label_pair_list.setdefault(idx, [img1_file,img2_file,lbl_file,image2_name])
 
         return img_label_pair_list

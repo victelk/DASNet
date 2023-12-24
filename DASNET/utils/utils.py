@@ -220,7 +220,7 @@ def resize_label(label, size):
 
     label = np.expand_dims(label,axis=0)
     label_resized = np.zeros((1,label.shape[0],size[0],size[1]))
-    interp = nn.Upsample(size=(size[0], size[1]),mode='bilinear')
+    interp = nn.Upsample(size=(size[0], size[1]), mode='bilinear', align_corners=True)
     #interp = nn.Upsample(size=(size[0], size[1]),mode='bilinear',align_corners=True)
     #labelVar = torch.from_numpy(label).float()
     labelVar = Variable(torch.from_numpy(label).float())
@@ -231,6 +231,6 @@ def resize_label(label, size):
 def rz_label(label, size):
 
     gt_e = torch.unsqueeze(label,dim=1)
-    interp = F.upsample(gt_e,(size[0],size[1]),mode='bilinear')
+    interp = F.upsample(gt_e, (size[0], size[1]), mode='bilinear', align_corners=True)
     gt_rz = torch.squeeze(interp,dim=1)
     return gt_rz

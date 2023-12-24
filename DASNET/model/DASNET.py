@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from attention import *
+from model.attention import *
 
 def convert_dict_names_for_fucking_faults():
 

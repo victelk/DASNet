@@ -1,22 +1,22 @@
 import os
 
-BASE_PATH = '/home/lhf/yzy/DASNET'
+BASE_PATH = '/mnt/tv_developers/users/victor/DASNet'
 PRETRAIN_MODEL_PATH = os.path.join(BASE_PATH,'pretrain')
-DATA_PATH = '/home/lhf/yzy/SceneChangeDet/CDD'
+DATA_PATH = '/mnt/tv_developers/users/victor/datasets/ChangeDetectionDataset/Real/subset'
 TRAIN_DATA_PATH = os.path.join(DATA_PATH)
 TRAIN_LABEL_PATH = os.path.join(DATA_PATH)
 TRAIN_TXT_PATH = os.path.join(TRAIN_DATA_PATH,'train.txt')
 VAL_DATA_PATH = os.path.join(DATA_PATH)
 VAL_LABEL_PATH = os.path.join(DATA_PATH)
 VAL_TXT_PATH = os.path.join(VAL_DATA_PATH,'val.txt')
-SAVE_PATH = '/home/lhf/yzy/DASNET/save'
+SAVE_PATH = os.path.join(BASE_PATH, 'save')
 SAVE_CKPT_PATH = os.path.join(SAVE_PATH,'ckpt')
 if not os.path.exists(SAVE_CKPT_PATH):
     os.mkdir(SAVE_CKPT_PATH)
 SAVE_PRED_PATH = os.path.join(SAVE_PATH,'prediction')
 if not os.path.exists(SAVE_PRED_PATH):
     os.mkdir(SAVE_PRED_PATH)
-TRAINED_BEST_PERFORMANCE_CKPT = os.path.join(SAVE_CKPT_PATH,'model_best.pth')
+TRAINED_BEST_PERFORMANCE_CKPT = os.path.join(SAVE_CKPT_PATH,'CDD_model_best.pth')
 INIT_LEARNING_RATE = 1e-4
 DECAY = 5e-5
 MOMENTUM = 0.90

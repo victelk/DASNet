@@ -187,7 +187,7 @@ def pxEval_maximizeFMeasure(totalPosNum, totalNegNum, totalFN, totalFP, thresh=N
     if np.any(thresh) != None:
         BestThresh = thresh[index]
         prob_eval_scores['BestThresh'] = BestThresh
-        print(BestThresh)
+        print("BestThresh={}".format(BestThresh))
 
     # return a dict
     return prob_eval_scores

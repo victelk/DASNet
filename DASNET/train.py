@@ -12,8 +12,8 @@ import utils.metric as mc
 import shutil
 import cv2
 
-import cfg.CDD_res5 as cfg
-import dataset.rs as dates
+import cfg.CDD as cfg
+import dataset.CDD as dates
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -43,7 +43,7 @@ def various_distance(out_vec_t0, out_vec_t1,dist_flag):
 
 def single_layer_similar_heatmap_visual(output_t0,output_t1,save_change_map_dir,epoch,filename,layer_flag,dist_flag):
 
-    interp = nn.Upsample(size=[cfg.TRANSFROM_SCALES[1],cfg.TRANSFROM_SCALES[0]], mode='bilinear')
+    interp = nn.Upsample(size=[cfg.TRANSFROM_SCALES[1],cfg.TRANSFROM_SCALES[0]], mode='bilinear', align_corners=True)
     n, c, h, w = output_t0.data.shape
     out_t0_rz = torch.transpose(output_t0.view(c, h * w), 1, 0)
     out_t1_rz = torch.transpose(output_t1.view(c, h * w), 1, 0)
@@ -64,33 +64,35 @@ def validate(net, val_dataloader,epoch,save_change_map_dir,save_roc_dir):
     net.eval()
     cont_conv5_total,cont_fc_total,cont_embedding_total,num = 0.0,0.0,0.0,0.0
     metric_for_conditions = util.init_metric_for_class_for_cmu(1)
-    for batch_idx, batch in enumerate(val_dataloader):
-        inputs1,input2, targets, filename, height, width = batch
-        height, width, filename = height.numpy()[0], width.numpy()[0], filename[0]
-        inputs1,input2,targets = inputs1.cuda(),input2.cuda(), targets.cuda()
-        inputs1,inputs2,targets = Variable(inputs1, volatile=True),Variable(input2,volatile=True) ,Variable(targets)
-        out_conv5,out_fc,out_embedding = net(inputs1,inputs2)
-        out_conv5_t0, out_conv5_t1 = out_conv5
-        out_fc_t0,out_fc_t1 = out_fc
-        out_embedding_t0,out_embedding_t1 = out_embedding
-        conv5_distance_map = single_layer_similar_heatmap_visual(out_conv5_t0,out_conv5_t1,save_change_map_dir,epoch,filename,'conv5','l2')
-        fc_distance_map = single_layer_similar_heatmap_visual(out_fc_t0,out_fc_t1,save_change_map_dir,epoch,filename,'fc','l2')
-        embedding_distance_map = single_layer_similar_heatmap_visual(out_embedding_t0,out_embedding_t1,save_change_map_dir,epoch,filename,'embedding','l2')
-        cont_conv5 = mc.RMS_Contrast(conv5_distance_map)
-        cont_fc = mc.RMS_Contrast(fc_distance_map)
-        cont_embedding = mc.RMS_Contrast(embedding_distance_map)
-        cont_conv5_total += cont_conv5
-        cont_fc_total += cont_fc
-        cont_embedding_total += cont_embedding
-        num += 1
-        prob_change = embedding_distance_map[0][0]
-        gt = targets.data.cpu().numpy()
-        FN, FP, posNum, negNum = mc.eval_image_rewrite(gt[0], prob_change, cl_index=1)
-        metric_for_conditions[0]['total_fp'] += FP
-        metric_for_conditions[0]['total_fn'] += FN
-        metric_for_conditions[0]['total_posnum'] += posNum
-        metric_for_conditions[0]['total_negnum'] += negNum
-        cont_conv5_mean, cont_fc_mean,cont_embedding_mean = cont_conv5_total/num, \
+    with torch.no_grad():
+        for batch_idx, batch in enumerate(val_dataloader):
+            inputs1,input2, targets, filename, height, width = batch
+            height, width, filename = height.numpy()[0], width.numpy()[0], filename[0]
+            inputs1,input2,targets = inputs1.cuda(),input2.cuda(), targets.cuda()
+            inputs1,inputs2,targets = Variable(inputs1, volatile=True),Variable(input2,volatile=True) ,Variable(targets)
+            targets = targets.float() / 255
+            out_conv5,out_fc,out_embedding = net(inputs1,inputs2)
+            out_conv5_t0, out_conv5_t1 = out_conv5
+            out_fc_t0,out_fc_t1 = out_fc
+            out_embedding_t0,out_embedding_t1 = out_embedding
+            conv5_distance_map = single_layer_similar_heatmap_visual(out_conv5_t0,out_conv5_t1,save_change_map_dir,epoch,filename,'conv5','l2')
+            fc_distance_map = single_layer_similar_heatmap_visual(out_fc_t0,out_fc_t1,save_change_map_dir,epoch,filename,'fc','l2')
+            embedding_distance_map = single_layer_similar_heatmap_visual(out_embedding_t0,out_embedding_t1,save_change_map_dir,epoch,filename,'embedding','l2')
+            cont_conv5 = mc.RMS_Contrast(conv5_distance_map)
+            cont_fc = mc.RMS_Contrast(fc_distance_map)
+            cont_embedding = mc.RMS_Contrast(embedding_distance_map)
+            cont_conv5_total += cont_conv5
+            cont_fc_total += cont_fc
+            cont_embedding_total += cont_embedding
+            num += 1
+            prob_change = embedding_distance_map[0][0]
+            gt = targets.data.cpu().numpy()
+            FN, FP, posNum, negNum = mc.eval_image_rewrite(gt[0], prob_change, cl_index=1)
+            metric_for_conditions[0]['total_fp'] += FP
+            metric_for_conditions[0]['total_fn'] += FN
+            metric_for_conditions[0]['total_posnum'] += posNum
+            metric_for_conditions[0]['total_negnum'] += negNum
+            cont_conv5_mean, cont_fc_mean,cont_embedding_mean = cont_conv5_total/num, \
                                                                             cont_fc_total/num,cont_embedding_total/num
 
     thresh = np.array(range(0, 256)) / 255.0
@@ -120,7 +122,7 @@ def validate(net, val_dataloader,epoch,save_change_map_dir,save_roc_dir):
         mc.plotPrecisionRecall(pr, recall, roc_save_dir, benchmark_pr=None)
         f_score_total += f_score
 
-    print(f_score_total/(len(conds)))
+    print("mean f_score={}".format(f_score_total/(len(conds))))
     return f_score_total/len(conds)
 
 def main():
@@ -145,8 +147,8 @@ def main():
   val_loader = Data.DataLoader(val_data, batch_size= cfg.BATCH_SIZE,
                                 shuffle= False, num_workers= 4, pin_memory= True)
   ######  build  models ########
-  import model.siameseNet.DASNET as models
-  pretrain_deeplab_path = os.path.join(cfg.PRETRAIN_MODEL_PATH, 'vgg16.pth')
+  import model.DASNET as models
+  pretrain_deeplab_path = os.path.join(cfg.PRETRAIN_MODEL_PATH, 'VGG16.pth')
   model = models.SiameseNet(norm_flag='l2')
   if resume:
       checkpoint = torch.load(cfg.TRAINED_BEST_PERFORMANCE_CKPT)
@@ -163,11 +165,11 @@ def main():
   save_change_map_dir = os.path.join(ab_test_dir, 'changemaps/')
   save_valid_dir = os.path.join(ab_test_dir,'valid_imgs')
   save_roc_dir = os.path.join(ab_test_dir,'roc')
-  check_dir(save_change_map_dir),check_dir(save_valid_dir),check_dir(save_roc_dir)
+  check_dir(save_change_map_dir), check_dir(save_valid_dir), check_dir(save_roc_dir)
   #########
   ######### optimizer ##########
   ######## how to set different learning rate for differernt layers #########
-  optimizer = torch.optim.Adam(params=model.parameters(),lr=cfg.INIT_LEARNING_RATE,weight_decay=cfg.DECAY)
+  optimizer = torch.optim.Adam(params=model.parameters(), lr=cfg.INIT_LEARNING_RATE, weight_decay=cfg.DECAY)
   ######## iter img_label pairs ###########
   loss_total = 0
   for epoch in range(100):
@@ -177,7 +179,7 @@ def main():
              model.train()
              img1_idx,img2_idx,label_idx, filename,height,width = batch
              img1,img2,label = Variable(img1_idx.cuda()),Variable(img2_idx.cuda()),Variable(label_idx.cuda())
-             label = label.float()
+             label = label.float() / 255
              out_conv5, out_fc,out_embedding = model(img1, img2)
              out_conv5_t0,out_conv5_t1 = out_conv5
              out_fc_t0,out_fc_t1 = out_fc
@@ -195,8 +197,8 @@ def main():
              optimizer.step()
              if (batch_idx) % 20 == 0:
                 print("Epoch [%d/%d] Loss: %.4f Mask_Loss_conv5: %.4f Mask_Loss_fc: %.4f "
-                      "Mask_Loss_embedding: %.4f" % (epoch, batch_idx,loss.data[0],contractive_loss_conv5.data[0],
-                                                     contractive_loss_fc.data[0],contractive_loss_embedding.data[0]))
+                      "Mask_Loss_embedding: %.4f" % (epoch, batch_idx,loss.data,contractive_loss_conv5.data,
+                                                     contractive_loss_fc.data,contractive_loss_embedding.data))
              if (batch_idx) % 1000 == 0:
                  model.eval()
                  current_metric = validate(model, val_loader, epoch,save_change_map_dir,save_roc_dir)
