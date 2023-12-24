@@ -79,7 +79,7 @@ def decode_segmap(temp, plot=False):
 
 class Dataset(Dataset):
 
-    def __init__(self,img_path,label_path,file_name_txt_path,split_flag, transform=True, transform_med = None):
+    def __init__(self, img_path, label_path, file_name_txt_path, split_flag, transform=True, transform_med = None):
 
         self.label_path = label_path
         self.img_path = img_path
@@ -94,7 +94,7 @@ class Dataset(Dataset):
     def get_img_label_path_pairs(self):
 
         img_label_pair_list = {}
-        if self.flag in ['train', 'val']:
+        if self.flag in ['train', 'val', 'test']:
             for idx , did in enumerate(open(self.img_txt_path)):
                 try:
                     image1_name,image2_name,mask_name = did.strip("\n").split(' ')
@@ -136,13 +136,18 @@ class Dataset(Dataset):
         img2 = np.array(img2,dtype= np.uint8)
         ####### load labels ############
         if self.flag == 'train':
-
             label = Image.open(label_path)
             if self.transform_med != None:
                 label = self.transform_med(label)
             label = np.array(label,dtype=np.int32)
 
         if self.flag == 'val':
+            label = Image.open(label_path)
+            if self.transform_med != None:
+               label = self.transform_med(label)
+            label = np.array(label,dtype=np.int32)
+
+        if self.flag == 'test':
             label = Image.open(label_path)
             if self.transform_med != None:
                label = self.transform_med(label)

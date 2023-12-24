@@ -87,7 +87,7 @@ def evalExp(gtBin, cur_prob, thres, validMap=None, validArea=None):
     fn_list = list(fnHist)
     fn_sum = sum(fn_list[2:])
     fnCum = np.cumsum(fnHist)
-    FN = fnCum[0:0 + len(thres)];
+    FN = fnCum[0:0 + len(thres)]
 
     if validMap.any() != None:
         fpArray = cur_prob[(gtBin == False) & (validMap == True)]
@@ -187,7 +187,11 @@ def pxEval_maximizeFMeasure(totalPosNum, totalNegNum, totalFN, totalFP, thresh=N
     if np.any(thresh) != None:
         BestThresh = thresh[index]
         prob_eval_scores['BestThresh'] = BestThresh
+        print("Best index={}".format(index))
         print("BestThresh={}".format(BestThresh))
+        print("recall_bst={}".format(recall_bst))
+        print("precision_bst={}".format(precision_bst))
+        print("max f-score={}".format(MaxF))
 
     # return a dict
     return prob_eval_scores
@@ -415,14 +419,13 @@ def save_metric2disk(metrics, save_path):
     metric_dict = {}
     for i in range(length):
         recall_ = list(metrics[i]['metric']['recall'])
-        name = metrics[i]['name']
         precision_ = list(metrics[i]['metric']['precision'])
         f_score = metrics[i]['metric']['MaxF']
         try:
             iu = metrics[i]['metric']['iu']
         except KeyError:
             iu = 0.0
-        metric_ = {'name': name, 'recall': recall_, 'precision': precision_, 'f-score': f_score, 'iu': iu}
+        metric_ = {'recall': recall_, 'precision': precision_, 'f-score': f_score, 'iu': iu}
         metric_dict.setdefault(i, metric_)
 
     file_ = open(save_path + '/metric.json', 'w')
